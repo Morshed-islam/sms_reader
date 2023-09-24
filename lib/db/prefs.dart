@@ -11,6 +11,9 @@ class Prefs{
   static StringPreference<String?> get getSim1Value => const StringPreference<String?>('sim1', '');
   static StringPreference<String?> get getSim2Value => const StringPreference<String?>('sim2', '');
 
+  static StringPreference<String?> get token => const StringPreference<String?>('token', '');
+  static BoolPreference get firstTimeLogin => const BoolPreference('first_time_login', false);
+
 
   static List<StringPreference> get user => const[
 

@@ -26,24 +26,24 @@ import android.net.Uri
 
 class MainActivity: FlutterActivity() {
 
-    private val CHANNEL = "com.sms_reader/sim_info"
-//    private val CHANNEL1 = "com.sms_reader/sim1"
+//    private val CHANNEL = "com.sms_reader/sim_info"
+    private val CHANNEL1 = "com.sms_reader/sim1"
     private val REQUEST_CODE = 123 // You can use any value you prefer
 
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
-        val packageName = packageName
-
-        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
-            val intent = Intent()
-            intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-            intent.data = Uri.parse("package:$packageName")
-            startActivity(intent)
-        }
-    }
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//
+//        val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+//        val packageName = packageName
+//
+//        if (!powerManager.isIgnoringBatteryOptimizations(packageName)) {
+//            val intent = Intent()
+//            intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+//            intent.data = Uri.parse("package:$packageName")
+//            startActivity(intent)
+//        }
+//    }
 
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
@@ -58,15 +58,19 @@ class MainActivity: FlutterActivity() {
 //            }
 //        }
 
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL1).setMethodCallHandler { call, result ->
 
             if (call.method == "requestBatteryOptimizations") {
                 requestIgnoreBatteryOptimizations()
                 result.success(true)
-            } else if (call.method == "getSim1MessageIds") {
-                val sim1MessageIds = getSim1MessageIds() // This is the function that fetches SIM1 messages' IDs
-                result.success(sim1MessageIds)
             }
+
+            /*    if (call.method == "getSim1MessageIds") {
+                val sim1MessageIds = getSim1MessageIds() // This is the function that fetches SIM1 messages' IDs
+                 Log.e("main Sim1", "sim ids "+sim1MessageIds.count())
+
+                 result.success(sim1MessageIds)
+            }*/
 
 //            else if (call.method == "getSimInfo") {
 //                val simInfo = getSimInfo()
@@ -158,6 +162,7 @@ class MainActivity: FlutterActivity() {
             for (subscriptionInfo in subscriptionInfoList) {
                 if (subscriptionInfo.simSlotIndex == 1) {
                     Log.e("main Sim1", "okk")
+                    Log.e("main Sim1", "sim slot "+subscriptionInfo.simSlotIndex)
                     // This is SIM1
                     do {
                         var messageId = cursor.getInt(cursor.getColumnIndexOrThrow("_id"))

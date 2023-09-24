@@ -26,33 +26,34 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   final SmsController _smsController =Get.find<SmsController>();
-  static const platform = const MethodChannel('com.sms_reader/sim_info');
+  static const platform = const MethodChannel("com.sms_reader/sim1");
   int _status = 0;
   List<DateTime> _events = [];
 
 
 
-  String _simInfo = "";
-
-  void _loadSimInfo() async {
-    try {
-      SimInfo simInfo = await SimInfoService.getSimInfo();
-      setState(() {
-        _simInfo = simInfo.simNumber;
-        log('sim info: ${_simInfo}');
-      });
-    } catch (e) {
-      setState(() {
-        _simInfo = "Error: $e";
-      });
-    }
-  }
+  // String _simInfo = "";
+  //
+  // void _loadSimInfo() async {
+  //   try {
+  //     SimInfo simInfo = await SimInfoService.getSimInfo();
+  //     setState(() {
+  //       _simInfo = simInfo.simNumber;
+  //       log('sim info: ${_simInfo}');
+  //     });
+  //   } catch (e) {
+  //     setState(() {
+  //       _simInfo = "Error: $e";
+  //     });
+  //   }
+  // }
 
 
   Future<void> _requestPhoneStatePermission() async {
     if (await Permission.phone.request().isGranted) {
       // Permission granted, proceed to load SIM info
-      _loadSimInfo();
+      // _loadSimInfo();
+      _smsController.getAllSms();
     } else {
       // Permission denied
       print("Phone state permission denied");
@@ -76,12 +77,14 @@ class _HomePageState extends State<HomePage> {
 
     _requestPhoneStatePermission();
 
+
     // FlutterBackgroundService().invoke('setAsBackground');
     // FlutterBackgroundService().
 
     // initPlatformState();
-    // _smsController.getAllSms();
-    _smsController.getSim1Messages();
+
+    ///todo -- will work on it
+    // _smsController.getSim1Messages(platform);
 
     // _smsController.listenIncomingSms();
   }
@@ -108,7 +111,7 @@ class _HomePageState extends State<HomePage> {
             onTap: (){
               setState(() {
                 _smsController.getAllSms();
-                _smsController.listenIncomingSms();
+                // _smsController.listenIncomingSms();
               });
             },
             child: const Padding(
@@ -119,18 +122,20 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body:  Obx(() {
-        // log("SIM 1 VALUES: ${_smsController.getSim1Messages()}");
+        log("First Time login: ${Prefs.firstTimeLogin.value}");
+        log("token :${Prefs.token.value}");
+
         return  Column(
           children: [
 
             Expanded(
               child:ListView.builder(
-                itemCount: _smsController.sim1SmsList.length,
+                itemCount: _smsController.smsList.length,
                 itemBuilder: (context, index) {
                   // log('pref ${Prefs.getSimNum.value}');
                   return ListTile(
-                    title: Text('From: ${_smsController.sim1SmsList[index].address}'),
-                    subtitle: Text('Message: ${_smsController.sim1SmsList[index].body} Time: ${_smsController.sim1SmsList[index].date}'),
+                    title: Text('From: ${_smsController.smsList[index].address}'),
+                    subtitle: Text('Message: ${_smsController.smsList[index].body} Time: ${_smsController.smsList[index].date}'),
                     // trailing: Text(_simInfo.substring(0,5)),
                   );
                 },
