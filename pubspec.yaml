@@ -35,8 +35,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
-  sms_advanced:
-    path: F:/plugin/sms_advanced-master
+#  sms_advanced:
+#    path: F:/plugin/sms_advanced-master
   telephony:
   flutter_background_service:
   flutter_background_service_android:
@@ -44,8 +44,6 @@ dependencies:
   flutter_local_notifications:
   get:
   url_launcher:
-#  flutter_sms:
-  background_fetch:
   flutter_background:
   shared_preferences:
   lottie:
