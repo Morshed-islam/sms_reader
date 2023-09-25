@@ -48,7 +48,7 @@ void main() async{
   Get.put(SmsController());
 
   await diInit();
-  // await initializeService();
+  await initializeService();
   // if(Prefs.token.value!.isNotEmpty){
   //   log("init service");
   //
