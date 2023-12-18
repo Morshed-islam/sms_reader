@@ -50,6 +50,7 @@ dependencies:
   http:
   either_dart:
   connectivity:
+  mobile_number:
 
 dev_dependencies:
   flutter_test:

@@ -14,6 +14,10 @@ class Prefs{
   static StringPreference<String?> get token => const StringPreference<String?>('token', '');
   static BoolPreference get firstTimeLogin => const BoolPreference('first_time_login', false);
 
+  static Future<void> logOut() async {
+    await token.updateValue(null);
+  }
+
 
   static List<StringPreference> get user => const[
 

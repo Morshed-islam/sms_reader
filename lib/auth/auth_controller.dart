@@ -26,7 +26,7 @@ class AuthController extends GetxController{
     final eitherResponse =await authRepo.loginUser(phone, pass);
     eitherResponse.fold((left){
       log('error $left');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Server Error')));
 
     }, (success) {
 
@@ -34,7 +34,7 @@ class AuthController extends GetxController{
       updateToken(success.token.toString());
 
       setIsFirstTimeLogin(true);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Success')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('login Success')));
       initializeService();
       Get.offAndToNamed(RouteName.home);
       log('Success $success');

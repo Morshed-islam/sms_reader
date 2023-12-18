@@ -72,11 +72,11 @@ class MainActivity: FlutterActivity() {
                  result.success(sim1MessageIds)
             }*/
 
-//            else if (call.method == "getSimInfo") {
-//                val simInfo = getSimInfo()
-//                result.success(simInfo)
-//            }
-
+         /*   else if (call.method == "getSimInfo") {
+                val simInfo = getSimInfo()
+                result.success(simInfo)
+            }
+*/
             else {
                 result.notImplemented()
             }

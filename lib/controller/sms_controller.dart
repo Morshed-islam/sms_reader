@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:mobile_number/mobile_number.dart';
+import 'package:sms_reader/helper/utils.dart';
 import 'package:telephony/telephony.dart';
 
 import '../auth/model/send_data_model.dart';
@@ -17,6 +20,9 @@ class SmsController extends GetxController {
 
   RxList<SmsMessage> incomingSmsList = <SmsMessage>[].obs;
 
+  RxList<SmsMessage> tempSmsList = <SmsMessage>[].obs;
+
+
 
   String? updateToken = '';
    // final platform = const MethodChannel("com.sms_reader/sim1");
@@ -26,20 +32,44 @@ class SmsController extends GetxController {
   var previousMessageIdentifier = ''.obs; // Initialize as null
   var recentMessage = ''.obs;
 
-  @override
-  void onInit() {
-    super.onInit();
-    // getSim1Messages();
-  }
+  RxString mobileNumber = ''.obs;
+  RxList<SimCard> simCard = <SimCard>[].obs;
 
   bool isListening = false;
 
   RxString sim1 = ''.obs;
   RxString sim2 = ''.obs;
 
+  // @override
+  // void onInit() {
+  //   super.onInit();
+  //   initMobileNumberState();
+  //   // getSim1Messages();
+  // }
+
+
+
+
+  void sortingSMS(SmsMessage smsData){
+
+    bool isDuplicate = tempSmsList.any((sms) => sms.body == smsData.body);
+
+    if(!isDuplicate){
+      tempSmsList.add(smsData);
+      log("not duplicate : ${tempSmsList.length}");
+
+    }else{
+      log("duplicates data");
+      log("duplicates data ${tempSmsList.length}");
+    }
+
+  }
+
 
   Future<void> getLastSms() async {
-
+    initMobileNumberState();
+    log("SIM 1 NUMBER : ${sim1}");
+    log("SIM 1 NUMBER : ${mobileNumber.value}");
 
     incomingSmsList.value = await telephony.value.getInboxSms(
       columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
@@ -51,6 +81,11 @@ class SmsController extends GetxController {
       ],
     );
 
+    sortingSMS(incomingSmsList.first);
+
+    // tempSmsList.add(incomingSmsList.first);
+    // log("temp list count: ${tempSmsList.length}");
+
     if (incomingSmsList.isNotEmpty) {
       SmsMessage latestMessage = incomingSmsList.first;
 
@@ -60,17 +95,16 @@ class SmsController extends GetxController {
       if (previousMessageIdentifier.isNotEmpty) {
         if (!mostRecentMessageIdentifier.contains(previousMessageIdentifier)) {
           print("Most recent message is different from the previous one.");
-          // print("recent body : ${latestMessage.body}");
-          // print("Previous  body: ${latestMessage.body}");
-          print("Previous Identy body: ${previousMessageIdentifier}");
-          print("Recent Identy body: ${mostRecentMessageIdentifier}");
+
+          print("Previous Identy body: $previousMessageIdentifier");
+          print("Recent Identy body: $mostRecentMessageIdentifier");
 
 
-          ///api---------------------------
+          ///-------------------Api call---------------------------
 
           if (incomingSmsList.isNotEmpty) {
 
-            final url = Uri.parse('http://18.136.115.162/api/sms/send-all-messages'); // Replace with your API endpoint URL
+            final url = Uri.parse('http://18.136.115.162/api/sms/send-all-messages');
 
             List<SendDataModel> sendDataModel = [];
             Set<String> uniqueMessageIdentifiers = Set<String>();
@@ -79,11 +113,16 @@ class SmsController extends GetxController {
               SendDataModel(
                 sender: latestMessage.address ?? '',
                 content: latestMessage.body ?? '',
-                recivedSimNumber: "${sim1.value}/${sim2.value}" ?? '',
-                simReceivedTimestamp: "2024-01-31T07:30:00Z",
-                simName: "Airtel",
+                recivedSimNumber: "${sim1.value}/${sim2.value} " ?? 'Not Found',
+                simReceivedTimestamp: DateTime.now().toString(),
+                // simReceivedTimestamp: "2024-01-31T07:30:00Z",
+                simName: Utils.getOperator(latestMessage.address.toString()),
               ),
             );
+
+            // 754 x 2 = 1508
+            // 18418 + 754 = 19172
+            // 19926
 
             // for(var sms in incomingSmsList){
             //   // Create a unique identifier for the SMS based on sender and message content
@@ -103,7 +142,8 @@ class SmsController extends GetxController {
             //     uniqueMessageIdentifiers.add(messageIdentifier);
             //   }
             // }
-            log("sorting list: ${sendDataModel.length} bal");
+
+            log("sorting list: ${sendDataModel.length}");
             final List<Map<String, dynamic>> jsonDataList = sendDataModel.map((model) => model.toJson()).toList();
 
             try {
@@ -135,7 +175,7 @@ class SmsController extends GetxController {
               print('Error: $error');
             }
 
-            log("ALL SMS LIST Controller${allSmsList}");
+            log("ALL SMS LIST Controller $allSmsList");
 
             // Get the most recent message (it should now be the first in the list)
             // SmsMessage mostRecentMessage = smsList.first;
@@ -147,7 +187,6 @@ class SmsController extends GetxController {
           } else {
             print("No messages available");
           }
-
 
         } else {
           print("Most recent message is the same as the previous one.");
@@ -161,23 +200,12 @@ class SmsController extends GetxController {
         previousMessageIdentifier.value = mostRecentMessageIdentifier;
     }
 
-    // print("Most recent  date: ${DateTime.fromMillisecondsSinceEpoch(mostRecentMessage.date?.toInt() ?? 1693807493000)}");
-   /* Set<String> uniqueMessageIdentifiers = Set<String>();
-
-    final messageIdentifier = '${mostRecentMessage.address}_${mostRecentMessage.body}';
-    log("${messageIdentifier}");
-
-    if (!uniqueMessageIdentifiers.contains(messageIdentifier)) {
-
-      uniqueMessageIdentifiers.add(messageIdentifier);
-    }
-*/
 
     update();
   }
 
 
-    Future<void> getAllSms() async {
+    Future<void> getAllSms({required bool isFromBackground}) async {
     smsList.value = await telephony.value.getInboxSms(
       columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
       sortOrder: [
@@ -199,76 +227,78 @@ class SmsController extends GetxController {
 
     log("SMS LIST Controller${smsList}");
 
-    // Check if the smsList is not empty
-    if (smsList.isNotEmpty) {
+    if(isFromBackground){
+      // Check if the smsList is not empty
+      if (smsList.isNotEmpty) {
 
-      final url = Uri.parse('http://18.136.115.162/api/sms/send-all-messages'); // Replace with your API endpoint URL
+        final url = Uri.parse('http://18.136.115.162/api/sms/send-all-messages'); // Replace with your API endpoint URL
 
-      List<SendDataModel> myModels= [];
-      Set<String> uniqueMessageIdentifiers = Set<String>();
+        List<SendDataModel> myModels= [];
+        Set<String> uniqueMessageIdentifiers = Set<String>();
 
-      for(var sms in smsList){
-        // Create a unique identifier for the SMS based on sender and message content
-        final messageIdentifier = '${sms.address}_${sms.body}';
+        for(var sms in smsList){
+          // Create a unique identifier for the SMS based on sender and message content
+          final messageIdentifier = '${sms.address}_${sms.body}';
 
-        if (!uniqueMessageIdentifiers.contains(messageIdentifier)) {
-          myModels.add(
-            SendDataModel(
-              sender: sms.address ?? '',
-              content: sms.body ?? '',
-              recivedSimNumber: "04145",
-              simReceivedTimestamp: "2024-01-31T07:30:00Z",
-              simName: "Airtel",
-            ),
-          );
+          if (!uniqueMessageIdentifiers.contains(messageIdentifier)) {
+            myModels.add(
+              SendDataModel(
+                sender: sms.address ?? '',
+                content: sms.body ?? '',
+                recivedSimNumber: sim1.value,
+                simReceivedTimestamp: DateTime.now().toString(),
+                simName: Utils.getOperator(sms.address.toString()),
+              ),
+            );
 
-          // Add the message identifier to the set to mark it as processed
-          uniqueMessageIdentifiers.add(messageIdentifier);
-        }
-      }
-      log("sorting list: ${myModels.length}");
-      final List<Map<String, dynamic>> jsonDataList = myModels.map((model) => model.toJson()).toList();
-
-      try {
-        if(myModels.isNotEmpty){
-          final response = await http.post(
-            url,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization' : Prefs.token.value!
-            },
-            body: jsonEncode(jsonDataList),
-          );
-
-          if (response.statusCode == 201 || response.statusCode == 200) {
-            print('Response data: ${response.body}');
-            print('Success: ');
-            myModels.clear();
-          } else {
-            print('Request failed with status code: ${response.statusCode}');
-            print('Response data: ${response.body}');
-            myModels.clear();
+            // Add the message identifier to the set to mark it as processed
+            uniqueMessageIdentifiers.add(messageIdentifier);
           }
-        }else{
-          print('Model data empty');
+        }
+        log("sorting list: ${myModels.length}");
+        final List<Map<String, dynamic>> jsonDataList = myModels.map((model) => model.toJson()).toList();
 
+        try {
+          if(myModels.isNotEmpty){
+            final response = await http.post(
+              url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization' : Prefs.token.value!
+              },
+              body: jsonEncode(jsonDataList),
+            );
+
+            if (response.statusCode == 201 || response.statusCode == 200) {
+              print('Response data: ${response.body}');
+              print('Success: ');
+              myModels.clear();
+            } else {
+              print('Request failed with status code: ${response.statusCode}');
+              print('Response data: ${response.body}');
+              myModels.clear();
+            }
+          }else{
+            print('Model data empty');
+
+          }
+
+        } catch (error) {
+          print('Error: $error');
         }
 
-      } catch (error) {
-        print('Error: $error');
+        log("ALL SMS LIST Controller${allSmsList}");
+
+        // Get the most recent message (it should now be the first in the list)
+        SmsMessage mostRecentMessage = smsList.first;
+        // Print the most recent message details
+        // print("Most recent message from: ${mostRecentMessage.address}");
+        // print("Most recent Message body: ${mostRecentMessage.body}");
+        // print("Most recent  date: ${DateTime.fromMillisecondsSinceEpoch(mostRecentMessage.date?.toInt() ?? 1693807493000)}");
+
+      } else {
+        print("No messages available");
       }
-
-      log("ALL SMS LIST Controller${allSmsList}");
-
-      // Get the most recent message (it should now be the first in the list)
-      SmsMessage mostRecentMessage = smsList.first;
-      // Print the most recent message details
-      // print("Most recent message from: ${mostRecentMessage.address}");
-      // print("Most recent Message body: ${mostRecentMessage.body}");
-      // print("Most recent  date: ${DateTime.fromMillisecondsSinceEpoch(mostRecentMessage.date?.toInt() ?? 1693807493000)}");
-
-    } else {
-      print("No messages available");
     }
 
     print("Total messages: ${smsList.length}");
@@ -276,6 +306,26 @@ class SmsController extends GetxController {
 
 
 
+  void setSim1(String sim){
+    sim1.value = sim;
+    update();
+  }
+
+
+  void setSim2(String sim){
+    sim2.value = sim;
+    update();
+
+  }
+
+  void updateTokenValue(String mToken){
+    Prefs.token.updateValue(mToken);
+    updateToken = mToken;
+    update();
+  }
+
+
+///#######################Incoming sms#############################################
   Future<void> listenIncomingSms(bool isListen) async {
     // Check if already listening
     if (isListening) {
@@ -324,7 +374,6 @@ class SmsController extends GetxController {
     print("Started listening sms");
   }
 
-
   Future<void> listenIncomingSms1() async {
     // Check if already listening
     if (isListening) {
@@ -361,6 +410,52 @@ class SmsController extends GetxController {
 
 
 
+  Future<void> initMobileNumberState() async {
+    if (!await MobileNumber.hasPhonePermission) {
+      await MobileNumber.requestPhonePermission;
+      return;
+    }
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      mobileNumber.value = (await MobileNumber.mobileNumber)!;
+      simCard.value = (await MobileNumber.getSimCards)!;
+
+      log("sim card list 1 outside: ${simCard[0].number ?? "SIM 1"}");
+      mobileNumber.value = simCard[0].number.toString();
+      if(simCard.isNotEmpty){
+        if(simCard.length == 1){
+          setSim1(simCard[0].number.toString());
+          mobileNumber.value = simCard[0].number.toString();
+          log("sim card list 1 inside: ${simCard[0].number ?? "SIM 1"}");
+          update();
+        }else if(simCard.length == 2){
+          setSim1(simCard[0].number.toString());
+          setSim2(simCard[1].number.toString());
+          log("sim card list 1: ${simCard[0].number ?? "SIM 1"}");
+          log("sim card list 2: ${simCard[1].number ?? "SIM 2"}");
+          update();
+        }
+
+      }else{
+
+      }
+
+
+      // log("sim card list 2: ${_simCard[1].number ?? "SIm 2 empty"}");
+      log("sim count: ${simCard.length}");
+
+    } on PlatformException catch (e) {
+      debugPrint("Failed to get mobile number because of '${e.message}'");
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    // if (!mounted) return;
+    update();
+  }
+
+
 
   // Future<void> listenIncomingSms() async{
   //   telephony.value.listenIncomingSms(
@@ -380,24 +475,10 @@ class SmsController extends GetxController {
   // }
 
 
-void setSim1(String sim){
-    sim1.value = sim;
-}
 
 
-  void setSim2(String sim){
-    sim2.value = sim;
-  }
-
-  void updateTokenValue(String mToken){
-    Prefs.token.updateValue(mToken);
-    updateToken = mToken;
-    update();
-  }
-
-
-
-  //-----------------------------------------------------
+  ///------------------------------------------###########################------------------------------------------
+/*
 
   ///todo have to work on it------------------
   Future<void> getSim1Messages(MethodChannel platform) async {
@@ -444,15 +525,19 @@ void setSim1(String sim){
       var sim1MessageIds = await platform.invokeMethod("getSim1MessageIds");
       log("sim1 ids ${sim1MessageIds.length}");
 
-      /*  List<String> messageIdentifiers = messages.map((message) => _generateMessageIdentifier(message)).toList();
-      log("sim total identi filter: ${messageIdentifiers.length}");*/
+      */
+/*  List<String> messageIdentifiers = messages.map((message) => _generateMessageIdentifier(message)).toList();
+      log("sim total identi filter: ${messageIdentifiers.length}");*//*
+
 
       // for(var id in messageIdentifiers){
       //   log("sim id: ${id}");
       // }
       // Create a set of SIM 2 message identifiers for faster lookup
-      /*  Set<dynamic> sim1MessageIdentifiers = sim1MessageIds.map((id) => id.toString()).toSet();
-      log("sim total filter: ${sim1MessageIdentifiers.length}");*/
+      */
+/*  Set<dynamic> sim1MessageIdentifiers = sim1MessageIds.map((id) => id.toString()).toSet();
+      log("sim total filter: ${sim1MessageIdentifiers.length}");*//*
+
       // for(var id in sim1MessageIdentifiers){
       //   log("sim identi: ${id}");
       // }
@@ -490,6 +575,7 @@ void setSim1(String sim){
   }
 
 
+*/
 
 
 }

