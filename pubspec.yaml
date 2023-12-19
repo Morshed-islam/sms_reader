@@ -51,8 +51,19 @@ dependencies:
   either_dart:
   connectivity:
   mobile_number:
+  google_fonts:
+
 
 dev_dependencies:
+#  flutter_launcher_icons:
+#
+#flutter_launcher_icons:
+#  android: "launcher_icon"
+#  ios: true
+#  image_path: "assets/images/icon.jpg"
+#  min_sdk_android: 21 # android min sdk min:16, default 21
+#
+
   flutter_test:
     sdk: flutter
 

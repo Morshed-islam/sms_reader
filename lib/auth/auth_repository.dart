@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 
 import 'package:either_dart/either.dart';
 import 'package:http/http.dart' as http;
@@ -25,11 +26,11 @@ class AuthRepo{
       // Login successful, handle the response here
       final responseData = jsonDecode(response.body);
       LoginModel lModel = LoginModel.fromJson(responseData);
-      print(responseData);
+      // log(responseData);
       return Right(lModel);
     } else {
       // Login failed, handle the error here
-      print("Login failed. Status code: ${response.statusCode}");
+      log("Login failed. Status code: ${response.statusCode}");
       return const Left('Server Error');
 
     }

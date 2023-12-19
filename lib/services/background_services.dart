@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:ui';
 import 'package:connectivity/connectivity.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
@@ -71,17 +72,29 @@ void onStart(ServiceInstance serviceInstance)async{
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
 
+        // if(await serviceInstance.isForegroundService()){
+        //   serviceInstance.setForegroundNotificationInfo(title: "SMS Reader", content: "Service is running!");
+        //   serviceInstance.setAutoStartOnBootMode(true);
+        //   // serviceInstance.setAsBackgroundService();
+        //   // smsController.incomingSmsList();
+        //
+        // }
 
         log('pref value :${Prefs.token.value}');
         if(Prefs.firstTimeLogin.value == true){
-          log('first time true');
-          Prefs.firstTimeLogin.updateValue(false);
+            log('first time true');
           smsController.getAllSms(isFromBackground: true);
+          Prefs.firstTimeLogin.updateValue(false);
+          // Future.delayed(const Duration(seconds: 10),(){
+          //   log('first time true');
+          //
+          //
+          // });
           // sendPostRequest(smsController);
         }else{
           log('first time false');
-          print('listen service running');
-          smsController.listenIncomingSms(false);
+          log('listen service running');
+          smsController.listenIncomingSms(true);
           smsController.getLastSms();
 
         }
@@ -90,10 +103,17 @@ void onStart(ServiceInstance serviceInstance)async{
       } else {
         // No network connectivity, handle accordingly
         log('No network connectivity');
+        if(await serviceInstance.isForegroundService()){
+          serviceInstance.setForegroundNotificationInfo(title: "SMS Reader", content: "You have not internet access!");
+          serviceInstance.setAutoStartOnBootMode(true);
+          // serviceInstance.setAsBackgroundService();
+          // smsController.incomingSmsList();
+
+        }
       }
 
 
-
+      ///todo --------------------
      if(await serviceInstance.isForegroundService()){
        serviceInstance.setForegroundNotificationInfo(title: "sms", content: "sms reader");
        serviceInstance.setAutoStartOnBootMode(true);

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_number/mobile_number.dart';
 import 'package:mobile_number/sim_card.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -26,6 +27,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final SmsController _smsController = Get.find<SmsController>();
+
   // static const platform = MethodChannel("com.sms_reader/sim1");
   int _status = 0;
   List<DateTime> _events = [];
@@ -56,12 +58,17 @@ class _HomePageState extends State<HomePage> {
       // Permission granted, proceed to load SIM info
       // _loadSimInfo();
       _smsController.getAllSms(isFromBackground: false);
+
+      log("token value 2: ${Prefs.token.value}" );
+      log("token value first time: ${Prefs.firstTimeLogin.value}" );
+      if(Prefs.firstTimeLogin.value == true){
+        _showFirstTimeAfterLoginSendSms(context);
+      }
     } else {
       // Permission denied
       print("Phone state permission denied");
     }
   }
-
 
   @override
   void initState() {
@@ -70,11 +77,11 @@ class _HomePageState extends State<HomePage> {
     _requestPhoneStatePermission();
     // _loadSimInfo();
 
-
     ///todo -- will work on it
     // _smsController.getSim1Messages(platform);
 
     // _smsController.listenIncomingSms();
+    //6890
 
     ///getting sim num
     MobileNumber.listenPhonePermission((isPermissionGranted) {
@@ -89,12 +96,16 @@ class _HomePageState extends State<HomePage> {
   ///getting sim num
   // Platform messages are asynchronous, so we initialize in an async method.
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Sms Reader"),
+        elevation: 3,
+        backgroundColor: Colors.white,
+        title: Text(
+          "SMS Reader",
+          style: GoogleFonts.notoSans(fontSize: 20, fontWeight: FontWeight.w600),
+        ),
         leading: InkWell(
             onTap: () {
               // _openSettings();
@@ -113,7 +124,7 @@ class _HomePageState extends State<HomePage> {
                 Future.delayed(const Duration(seconds: 2), () {
                   setState(() {
                     isReload = false;
-                    _smsController.getAllSms(isFromBackground: false);
+                    // _smsController.getAllSms(isFromBackground: false);
                   });
                 });
                 // _smsController.listenIncomingSms();
@@ -124,21 +135,33 @@ class _HomePageState extends State<HomePage> {
               child: Icon(Icons.refresh_sharp),
             ),
           ),
-
-           InkWell(
-               onTap: (){
-                 _showLogoutDialog(context);
-               },
-               child: const Padding(
-                 padding: EdgeInsets.only(right: 8.0),
-                 child: Icon(Icons.logout),
-               ))
+          InkWell(
+              onTap: () {
+                _showLogoutDialog(context);
+              },
+              child: const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: Icon(Icons.logout),
+              ))
         ],
       ),
       body: Obx(() {
         log("First Time login: ${Prefs.firstTimeLogin.value}");
         log("token :${Prefs.token.value}");
-        log("number :${_smsController.mobileNumber.value}");
+        // log("number :${_smsController.mobileNumber.value}");
+
+        // if(Prefs.firstTimeLogin.value == true){
+        //   Future.delayed(const Duration(seconds: 10),(){
+        //     log('from build true');
+        //     Prefs.firstTimeLogin.updateValue(false);
+        //     _smsController.getAllSms(isFromBackground: true);
+        //
+        //   });
+        //   // sendPostRequest(smsController);
+        // }else{
+        //   log('from build false');
+        //
+        // }
 
         return Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -147,22 +170,46 @@ class _HomePageState extends State<HomePage> {
                 ? const Center(child: CircularProgressIndicator())
                 : Expanded(
                     child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
                       itemCount: _smsController.smsList.length,
                       itemBuilder: (context, index) {
-                        // log('pref ${Prefs.getSimNum.value}');
+                        log("server time :${_smsController.smsList[index].date}");
+
+                        var odd = index % 2 == 0 ? true : false;
                         return Column(
-                          children : [
-                            ListTile(
-                              title: Text('From: ${_smsController.smsList[index].address}',style: const TextStyle(fontWeight: FontWeight.w600),),
-                              subtitle: Text('Message: ${_smsController.smsList[index].body} '
-                                  // '\nTime: ${_smsController.smsList[index].date}'
+                          children: [
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                              width: double.infinity,
+                              decoration: BoxDecoration(color: odd ? Colors.grey[300] : Colors.white, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.grey, width: 1)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'From: ${_smsController.smsList[index].address}',
+                                    style: GoogleFonts.notoSans(fontWeight: FontWeight.w600, fontSize: 16),
+                                    // style: const TextStyle(fontWeight: FontWeight.w600,),
+                                  ),
+                                  Text(
+                                    'Message: ${_smsController.smsList[index].body}',
+                                    style: GoogleFonts.notoSans(),
+                                  ),
+                                  Text(
+                                    'Time: ${DateTime.fromMillisecondsSinceEpoch(int.parse(_smsController.smsList[index].date.toString()))}',
+                                    style: GoogleFonts.notoSans(fontSize: 14),
+                                  )
+                                ],
                               ),
-                              // trailing: Text(_simInfo.substring(0,5)),
                             ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0),
-                              child: Divider(height: 1,color: Colors.grey,),
-                            )
+
+                            // ListTile(
+                            //   title: Text('From: ${_smsController.smsList[index].address}',style: const TextStyle(fontWeight: FontWeight.w600),),
+                            //   subtitle: Text('Message: ${_smsController.smsList[index].body} '
+                            //       // '\nTime: ${_smsController.smsList[index].date}'
+                            //   ),
+                            //   // trailing: Text(_simInfo.substring(0,5)),
+                            // ),
                           ],
                         );
                       },
@@ -176,6 +223,7 @@ class _HomePageState extends State<HomePage> {
 
   _showCustomDialog(BuildContext context) {
     showDialog(
+      barrierDismissible: false,
       context: context,
       builder: (context) {
         return Prefs.getSimNum.value == false
@@ -193,25 +241,60 @@ class _HomePageState extends State<HomePage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Add SIM number'),
+                        Text(
+                          'Your SIM numbers',
+                          style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
                         const SizedBox(height: 20),
-                        TextFormField(
-                          enabled: false,
-                          onChanged: (value) => _smsController.setSim1(value),
-                          decoration: InputDecoration(
-                            labelText: _smsController.mobileNumber.value ?? "",
-                            // labelText: 'SIM 1',
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey, width: 1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          height: 45,
+                          child: TextFormField(
+                            enabled: false,
+                            onChanged: (value) => _smsController.setSim1(value),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              labelText: _smsController.sim1.value.isEmpty ? 'SIM 1 not Found' : _smsController.sim1.value,
+                              labelStyle: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+                              // labelText: 'SIM 1',
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
-                        TextFormField(
-                          enabled: false,
-                          onChanged: (value) => _smsController.setSim2(value),
-                          decoration: const InputDecoration(
-                            labelText: 'SIM 2',
+                        Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey, width: 1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          height: 45,
+                          child: TextFormField(
+                            enabled: false,
+                            onChanged: (value) => _smsController.setSim2(value),
+                            decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                              labelText: _smsController.sim2.value.isEmpty ? 'SIM 2 not Found' : _smsController.sim1.value,
+                              labelStyle: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
+
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: Text(
+                              'Close',
+                              style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+
                         // Align(
                         //   alignment: Alignment.bottomRight,
                         //   child: ElevatedButton(
@@ -251,11 +334,12 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Text(
                         "SIM 1 : ${_smsController.sim1.value}",
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                       Text(
                         "SIM 2 : ${_smsController.sim2.value}",
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        // style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -313,17 +397,29 @@ class _HomePageState extends State<HomePage> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Log Out'),
-          content: const Text('Do you want to log out?'),
+          title: Text(
+            'Log Out',
+            style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          content: Text(
+            'Do you want to log out?',
+            style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
           actions: <Widget>[
             TextButton(
-              child: const Text('No'),
+              child: Text(
+                'No',
+                style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
               onPressed: () {
                 Navigator.of(context).pop(); // Dismiss the dialog
               },
             ),
             TextButton(
-              child: const Text('Yes'),
+              child: Text(
+                'Yes',
+                style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
               onPressed: () {
                 // Perform logout actions here
                 // For example, you can navigate to the login screen
@@ -338,5 +434,46 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _showFirstTimeAfterLoginSendSms(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: AlertDialog(
+            // title:  Text('Log Out', style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),),
+            content: Text(
+              'All your sms will send to server , please give this permission!',
+              style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(
+                  'Accept',
+                  style: GoogleFonts.notoSans(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                onPressed: () {
+                  setState(() {
+                    _smsController.getAllSms(isFromBackground: true);
+                    Prefs.firstTimeLogin.updateValue(false);
 
+
+                  });
+
+                  Future.delayed(const Duration(seconds: 2),(){
+                    ScaffoldMessenger.of(context!).showSnackBar(const SnackBar(content: Text('Message sent to database!')));
+                  });
+
+                  // Perform logout actions here
+                  // For example, you can navigate to the login screen
+                  Navigator.of(context).pop(); // Dismiss the dialog
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

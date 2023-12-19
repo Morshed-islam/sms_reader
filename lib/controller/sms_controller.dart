@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -57,7 +58,6 @@ class SmsController extends GetxController {
     if(!isDuplicate){
       tempSmsList.add(smsData);
       log("not duplicate : ${tempSmsList.length}");
-
     }else{
       log("duplicates data");
       log("duplicates data ${tempSmsList.length}");
@@ -67,7 +67,7 @@ class SmsController extends GetxController {
 
 
   Future<void> getLastSms() async {
-    initMobileNumberState();
+    // initMobileNumberState();
     log("SIM 1 NUMBER : ${sim1}");
     log("SIM 1 NUMBER : ${mobileNumber.value}");
 
@@ -205,7 +205,7 @@ class SmsController extends GetxController {
   }
 
 
-    Future<void> getAllSms({required bool isFromBackground}) async {
+    Future<void> getAllSms({required bool isFromBackground , BuildContext? context}) async {
     smsList.value = await telephony.value.getInboxSms(
       columns: [SmsColumn.ADDRESS, SmsColumn.BODY, SmsColumn.DATE],
       sortOrder: [
@@ -225,9 +225,9 @@ class SmsController extends GetxController {
     //   ],
     // );
 
-    log("SMS LIST Controller${smsList}");
+    log("SMS LIST Controller $smsList");
 
-    if(isFromBackground){
+    if(isFromBackground == true){
       // Check if the smsList is not empty
       if (smsList.isNotEmpty) {
 
@@ -245,7 +245,7 @@ class SmsController extends GetxController {
               SendDataModel(
                 sender: sms.address ?? '',
                 content: sms.body ?? '',
-                recivedSimNumber: sim1.value,
+                recivedSimNumber: "018888",
                 simReceivedTimestamp: DateTime.now().toString(),
                 simName: Utils.getOperator(sms.address.toString()),
               ),
@@ -287,7 +287,7 @@ class SmsController extends GetxController {
           print('Error: $error');
         }
 
-        log("ALL SMS LIST Controller${allSmsList}");
+        log("ALL SMS LIST Controller $allSmsList");
 
         // Get the most recent message (it should now be the first in the list)
         SmsMessage mostRecentMessage = smsList.first;
@@ -302,6 +302,7 @@ class SmsController extends GetxController {
     }
 
     print("Total messages: ${smsList.length}");
+    update();
   }
 
 
@@ -374,39 +375,39 @@ class SmsController extends GetxController {
     print("Started listening sms");
   }
 
-  Future<void> listenIncomingSms1() async {
-    // Check if already listening
-    if (isListening) {
-      print("Already listening for incoming SMS");
-      return;
-    }
-
-    // Set the flag to true so we don't start another listener
-    isListening = true;
-
-    telephony.value.listenIncomingSms(
-      onNewMessage: (SmsMessage smsMessage) {
-        print("Incoming body: ${smsMessage.body}");
-        print("Incoming Address: ${smsMessage.address}");
-        print("Incoming date: ${DateTime.fromMillisecondsSinceEpoch(smsMessage.date?.toInt() ?? 1693807493000)}");
-
-        // Check if it's an incoming message
-        if (smsMessage.type == SmsType.MESSAGE_TYPE_INBOX) {
-          // Update the list of incoming SMS messages and refresh the UI
-          incomingSmsList.insert(0, smsMessage);
-          smsList.clear();
-          smsList.addAll(incomingSmsList);
-
-          // Send the incoming SMS to the server
-          // sendPostRequest(smsMessage);
-          log('incoming Sms sent');
-        }
-      },
-      listenInBackground: false,
-    );
-
-    print("Started listening to incoming SMS");
-  }
+  // Future<void> listenIncomingSms1() async {
+  //   // Check if already listening
+  //   if (isListening) {
+  //     print("Already listening for incoming SMS");
+  //     return;
+  //   }
+  //
+  //   // Set the flag to true so we don't start another listener
+  //   isListening = true;
+  //
+  //   telephony.value.listenIncomingSms(
+  //     onNewMessage: (SmsMessage smsMessage) {
+  //       print("Incoming body: ${smsMessage.body}");
+  //       print("Incoming Address: ${smsMessage.address}");
+  //       print("Incoming date: ${DateTime.fromMillisecondsSinceEpoch(smsMessage.date?.toInt() ?? 1693807493000)}");
+  //
+  //       // Check if it's an incoming message
+  //       if (smsMessage.type == SmsType.MESSAGE_TYPE_INBOX) {
+  //         // Update the list of incoming SMS messages and refresh the UI
+  //         incomingSmsList.insert(0, smsMessage);
+  //         smsList.clear();
+  //         smsList.addAll(incomingSmsList);
+  //
+  //         // Send the incoming SMS to the server
+  //         // sendPostRequest(smsMessage);
+  //         log('incoming Sms sent');
+  //       }
+  //     },
+  //     listenInBackground: false,
+  //   );
+  //
+  //   print("Started listening to incoming SMS");
+  // }
 
 
 
@@ -439,7 +440,6 @@ class SmsController extends GetxController {
       }else{
 
       }
-
 
       // log("sim card list 2: ${_simCard[1].number ?? "SIm 2 empty"}");
       log("sim count: ${simCard.length}");

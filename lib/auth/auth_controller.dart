@@ -22,8 +22,7 @@ class AuthController extends GetxController{
 
   Future<void> getLoginResponse (BuildContext context,String phone,String pass) async{
 
-
-    final eitherResponse =await authRepo.loginUser(phone, pass);
+    final eitherResponse = await authRepo.loginUser(phone, pass);
     eitherResponse.fold((left){
       log('error $left');
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Server Error')));
@@ -38,6 +37,7 @@ class AuthController extends GetxController{
       initializeService();
       Get.offAndToNamed(RouteName.home);
       log('Success $success');
+      update();
 
     });
 
