@@ -8,6 +8,8 @@ import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:get/get.dart';
+import 'package:notification_reader/NotificationData.dart';
+import 'package:notification_reader/notification_reader.dart';
 import 'package:sms_reader/auth/model/send_data_model.dart';
 import 'package:sms_reader/db/prefs.dart';
 import 'package:sms_reader/db/shared_db.dart';
@@ -94,8 +96,11 @@ void onStart(ServiceInstance serviceInstance)async{
         }else{
           log('first time false');
           log('listen service running');
+          smsController.initNotificationState();
           smsController.listenIncomingSms(true);
           smsController.getLastSms();
+
+          // log("List of notification: ${smsController.notificationList}");
 
         }
 
@@ -109,6 +114,41 @@ void onStart(ServiceInstance serviceInstance)async{
           // serviceInstance.setAsBackgroundService();
           // smsController.incomingSmsList();
 
+
+            // NotificationData res = await NotificationReader.onNotificationRecieve();
+            // if (res.body != null) {
+            //   // Initialize the titleList with the first notification
+            //   setState(() {
+            //     titleList.add(res);
+            //   });
+            //
+            //   Timer.periodic(const Duration(seconds: 5), (timer) async {
+            //     var newNotification = await NotificationReader.onNotificationRecieve();
+            //
+            //     // Check if the body of the new notification is not null
+            //     if (newNotification.body != null) {
+            //       // Update the titleList with the new notification if it's not already present
+            //       if (!titleList.contains(newNotification)) {
+            //         setState(() {
+            //           titleList.add(newNotification);
+            //           print("Notification list: $titleList");
+            //
+            //         });
+            //       }
+            //     }
+            //
+            //     // If you want to get the body of the last notification, you can use:
+            //     String? lastNotificationBody = titleList.isNotEmpty ? titleList.last.body : "null notify";
+            //
+            //     if(lastNotificationBody != 'sms reader'){
+            //       print("Last Notification Body: $lastNotificationBody");
+            //     }else{
+            //       print("sms reader last sms : $lastNotificationBody");
+            //       titleList.clear();
+            //     }
+            //
+            //   });
+            // }
         }
       }
 

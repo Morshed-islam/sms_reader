@@ -1,22 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_number/mobile_number.dart';
-import 'package:mobile_number/sim_card.dart';
+import 'package:notification_reader/notification_reader.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:sms_reader/db/shared_db.dart';
 import 'package:sms_reader/db/prefs.dart';
-
-// import 'package:telephony/telephony.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../controller/sms_controller.dart';
 import '../routes/app_routes.dart';
-import '../services/siminfo_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -29,29 +21,29 @@ class _HomePageState extends State<HomePage> {
   final SmsController _smsController = Get.find<SmsController>();
 
   // static const platform = MethodChannel("com.sms_reader/sim1");
-  int _status = 0;
-  List<DateTime> _events = [];
+
+  List<NotificationData> titleList = [];
 
   ///getting sim num
 
   bool isReload = false;
 
-  // String _simInfo = "";
-  //
-  // void _loadSimInfo() async {
-  //   try {
-  //     SimInfo simInfo2 = await SimInfoService.getSimInfo();
-  //
-  //     setState(() {
-  //       _simInfo = simInfo2.simNumber;
-  //       log('sim info: ${_simInfo}');
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       _simInfo = "Error: $e";
-  //     });
-  //   }
-  // }
+  /*String _simInfo = "";
+
+  void _loadSimInfo() async {
+    try {
+      SimInfo simInfo2 = await SimInfoService.getSimInfo();
+
+      setState(() {
+        _simInfo = simInfo2.simNumber;
+        log('sim info: ${_simInfo}');
+      });
+    } catch (e) {
+      setState(() {
+        _simInfo = "Error: $e";
+      });
+    }
+  }*/
 
   Future<void> _requestPhoneStatePermission() async {
     if (await Permission.phone.request().isGranted) {
@@ -59,9 +51,9 @@ class _HomePageState extends State<HomePage> {
       // _loadSimInfo();
       _smsController.getAllSms(isFromBackground: false);
 
-      log("token value 2: ${Prefs.token.value}" );
-      log("token value first time: ${Prefs.firstTimeLogin.value}" );
-      if(Prefs.firstTimeLogin.value == true){
+      log("token value 2: ${Prefs.token.value}");
+      log("token value first time: ${Prefs.firstTimeLogin.value}");
+      if (Prefs.firstTimeLogin.value == true) {
         _showFirstTimeAfterLoginSendSms(context);
       }
     } else {
@@ -76,6 +68,14 @@ class _HomePageState extends State<HomePage> {
     // _smsController.getAllSms();
     _requestPhoneStatePermission();
     // _loadSimInfo();
+
+     Permission.notification.isDenied.then((value){
+      if(value){
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please give notification access!")));
+      }
+    });
+
+    // initPlatformState();
 
     ///todo -- will work on it
     // _smsController.getSim1Messages(platform);
@@ -98,6 +98,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+
+
     return Scaffold(
       appBar: AppBar(
         elevation: 3,
@@ -142,7 +144,15 @@ class _HomePageState extends State<HomePage> {
               child: const Padding(
                 padding: EdgeInsets.only(right: 8.0),
                 child: Icon(Icons.logout),
-              ))
+              )),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: InkWell(
+                onTap: () async {
+                  await NotificationReader.openNotificationReaderSettings;
+                },
+                child: const Icon(Icons.notification_add)),
+          ),
         ],
       ),
       body: Obx(() {
@@ -457,12 +467,10 @@ class _HomePageState extends State<HomePage> {
                   setState(() {
                     _smsController.getAllSms(isFromBackground: true);
                     Prefs.firstTimeLogin.updateValue(false);
-
-
                   });
 
-                  Future.delayed(const Duration(seconds: 2),(){
-                    ScaffoldMessenger.of(context!).showSnackBar(const SnackBar(content: Text('Message sent to database!')));
+                  Future.delayed(const Duration(seconds: 2), () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message sent to database!')));
                   });
 
                   // Perform logout actions here
@@ -476,4 +484,57 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
+
+  // Future<void> initPlatformState() async {
+  //   NotificationData res = await NotificationReader.onNotificationRecieve();
+  //   if (res.body != null) {
+  //     Timer.periodic(const Duration(seconds: 1), (timer) async {
+  //       var res = await NotificationReader.onNotificationRecieve();
+  //
+  //       if (!titleList.contains(res)) {
+  //         setState(() {
+  //           titleList.add(res);
+  //         });
+  //       }
+  //     });
+  //   }
+  // }
+
+  // Future<void> initPlatformState() async {
+  //   NotificationData res = await NotificationReader.onNotificationRecieve();
+  //   if (res.body != null) {
+  //     // Initialize the titleList with the first notification
+  //     setState(() {
+  //       titleList.add(res);
+  //     });
+  //
+  //     Timer.periodic(const Duration(seconds: 5), (timer) async {
+  //       var newNotification = await NotificationReader.onNotificationRecieve();
+  //
+  //       // Check if the body of the new notification is not null
+  //       if (newNotification.body != null) {
+  //         // Update the titleList with the new notification if it's not already present
+  //         if (!titleList.contains(newNotification)) {
+  //           setState(() {
+  //             titleList.add(newNotification);
+  //             print("Notification list: $titleList");
+  //
+  //           });
+  //         }
+  //       }
+  //
+  //       // If you want to get the body of the last notification, you can use:
+  //       String? lastNotificationBody = titleList.isNotEmpty ? titleList.last.body : "null notify";
+  //
+  //       if(lastNotificationBody != 'sms reader'){
+  //         print("Last Notification Body: $lastNotificationBody");
+  //       }else{
+  //         print("sms reader last sms : $lastNotificationBody");
+  //         titleList.clear();
+  //       }
+  //
+  //     });
+  //   }
+  // }
+
 }

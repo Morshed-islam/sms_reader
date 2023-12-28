@@ -44,6 +44,7 @@ void main() async{
       Permission.notification.request();
     }
   });
+
   Get.put(SmsController());
 
   await diInit();
