@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:mobile_number/mobile_number.dart';
+import 'package:notification_reader/notification_reader.dart';
 import 'package:sms_reader/helper/utils.dart';
 import 'package:telephony/telephony.dart';
 
@@ -23,6 +24,7 @@ class SmsController extends GetxController {
 
   RxList<SmsMessage> tempSmsList = <SmsMessage>[].obs;
 
+  RxList<NotificationData> notificationList = <NotificationData>[].obs;
 
 
   String? updateToken = '';
@@ -68,7 +70,7 @@ class SmsController extends GetxController {
 
   Future<void> getLastSms() async {
     // initMobileNumberState();
-    log("SIM 1 NUMBER : ${sim1}");
+    log("SIM 1 NUMBER : $sim1");
     log("SIM 1 NUMBER : ${mobileNumber.value}");
 
     incomingSmsList.value = await telephony.value.getInboxSms(
@@ -94,10 +96,10 @@ class SmsController extends GetxController {
       // Compare with the previous message
       if (previousMessageIdentifier.isNotEmpty) {
         if (!mostRecentMessageIdentifier.contains(previousMessageIdentifier)) {
-          print("Most recent message is different from the previous one.");
+          log("Most recent message is different from the previous one.");
 
-          print("Previous Identy body: $previousMessageIdentifier");
-          print("Recent Identy body: $mostRecentMessageIdentifier");
+          log("Previous Identity body: $previousMessageIdentifier");
+          log("Recent Identity body: $mostRecentMessageIdentifier");
 
 
           ///-------------------Api call---------------------------
@@ -330,41 +332,27 @@ class SmsController extends GetxController {
   Future<void> listenIncomingSms(bool isListen) async {
     // Check if already listening
     if (isListening) {
-      print("Already listening for incoming SMS");
+      log("Already listening for incoming SMS");
       return;
     }
 
     // Set the flag to true so we don't start another listener
-    print("check before listen");
+    log("check before listen");
 
     isListening = isListen;
-    print("check after listen");
+    log("check after listen");
 
     telephony.value.listenIncomingSms(
       onNewMessage: (SmsMessage smsMessage) {
-        print("Incoming body: ${smsMessage.body}");
-        print("Incoming Address: ${smsMessage.address}");
-        print("Incoming date: ${DateTime.fromMillisecondsSinceEpoch(smsMessage.date?.toInt() ?? 1693807493000)}");
-
-        // Update the list of SMS messages and refresh the UI
-        // smsList.insert(0, smsMessage);
-
-        // Check if it's an incoming message
-        // if(smsMessage.type != null){
+        log("Incoming body: ${smsMessage.body}");
+        log("Incoming Address: ${smsMessage.address}");
+        log("Incoming date: ${DateTime.fromMillisecondsSinceEpoch(smsMessage.date?.toInt() ?? 1693807493000)}");
 
           incomingSmsList.insert(0, smsMessage);
           smsList.clear();
           smsList.addAll(incomingSmsList);
 
-          // Send the incoming SMS to the server
-
-
           log("incoming sms length: ${smsList.length}");
-
-
-
-        // }
-
 
       },
 
@@ -410,7 +398,6 @@ class SmsController extends GetxController {
   // }
 
 
-
   Future<void> initMobileNumberState() async {
     if (!await MobileNumber.hasPhonePermission) {
       await MobileNumber.requestPhonePermission;
@@ -453,6 +440,23 @@ class SmsController extends GetxController {
     // setState to update our non-existent appearance.
     // if (!mounted) return;
     update();
+  }
+
+
+  Future<void> initNotificationState() async {
+    NotificationData res = await NotificationReader.onNotificationRecieve();
+    if (res.body != null) {
+      // Timer.periodic(const Duration(seconds: 1), (timer) async {
+        var res = await NotificationReader.onNotificationRecieve();
+        log("Notification result: ${res.body}");
+        if (!notificationList.contains(res)) {
+          log("duplicated notification added");
+
+            notificationList.add(res);
+            update();
+        }
+      // });
+    }
   }
 
 

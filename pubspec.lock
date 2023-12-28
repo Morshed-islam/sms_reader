@@ -328,6 +328,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  notification_reader:
+    dependency: "direct main"
+    description:
+      name: notification_reader
+      sha256: "4b09eeebfdaf6615fe78f54e9e0b409842bcf266e5fd1e8fdca1d4079515f5d7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   path:
     dependency: transitive
     description:

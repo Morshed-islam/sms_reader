@@ -94,8 +94,17 @@ void onStart(ServiceInstance serviceInstance)async{
         }else{
           log('first time false');
           log('listen service running');
+          smsController.initNotificationState();
           smsController.listenIncomingSms(true);
           smsController.getLastSms();
+
+          log("List of notification: ${smsController.notificationList}");
+
+
+
+          for (int i = 0; i < smsController.notificationList.length; i++) {
+            log("Body : ${smsController.notificationList.last.body}");
+          }
 
         }
 

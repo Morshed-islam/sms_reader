@@ -52,6 +52,7 @@ dependencies:
   connectivity:
   mobile_number:
   google_fonts:
+  notification_reader:
 
 
 dev_dependencies:
